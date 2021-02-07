@@ -18,17 +18,17 @@ Sostanzialmente è un rimaneggiamento del codice citato di seguito:
  
         |---1B---|---1B---|----1B-----|---1B---|------1B------|---VARIABLE--|---2B----|
  
- DA: destination address - 1byte (1-254, 255 indirizzo di broadcast)
+ - DA: destination address - 1byte (1-254, 255 indirizzo di broadcast)
  
- SA: source addresss - 1byte da 1 a 254
+ - SA: source addresss - 1byte da 1 a 254
  
- Group: group addresss - 1byte da 1 a 254 (per inviare a tutti membri del gruppo DA deve essere 0xFF o 255)
+ - GROUP: group addresss - 1byte da 1 a 254 (per inviare a tutti membri del gruppo DA deve essere 0xFF o 255)
  
- SI: service identifier (ACK, MSG) - 1byte
+ - SI: service identifier (ACK, MSG) - 1byte
  
- BYTE_CNT: numero byte complessivi (+payload -CRC) - 1byte
+ - BYTE_CNT: numero byte complessivi (+payload -CRC) - 1byte
  
- CRC: Cyclic Redundancy Check - 2byte (calcolati su tutto il messaggio)
+ - CRC: Cyclic Redundancy Check - 2byte (calcolati su tutto il messaggio)
  
  Il buffer di trasmissione memorizza un solo messaggio ed è a comune tra trasmissione e ricezione. 
  
