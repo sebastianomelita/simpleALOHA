@@ -1,5 +1,9 @@
 # simpleALOHA
-Implementazione del protocollo ALOHA con rilevazione delle collisioni basata sulla perdita o sulla non correttezza degli ack inviati dal ricevitore. Si adopera su un bus interfacciato con un transceiver RS485. Il transceiver provato è un MAX485 con piedino di controllo della direzione. Dovrebbe funzionare anche con un transceiver col controllo automatico della direzione (piedino con una impostazione qualsiasi).
+Implementazione del protocollo ALOHA con rilevazione delle collisioni basata sulla perdita o sulla non correttezza degli ack inviati dal ricevitore. Si adopera su un bus interfacciato con un transceiver RS485. 
+
+Si può usare per realizzare un sistema multimaster con stazioni che trasmettono indipendentemente l'una dall'altra senza la supervisione di un dispositivo centrale (master).
+
+Il transceiver provato è un MAX485 con piedino di controllo della direzione. Dovrebbe funzionare anche con un transceiver col controllo automatico della direzione (piedino con una impostazione qualsiasi).
 Sostanzialmente è un rimaneggiamento del codice citato di seguito:
  * @file 	ModbusRtu.h
  * @version     1.21
