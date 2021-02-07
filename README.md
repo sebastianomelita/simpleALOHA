@@ -60,7 +60,7 @@ Tempistiche e impostazioni:
 
 - MAXATTEMPTS  	numero di tentativi di ritrasmissione in mancanza di un ack dal ricevitore
 
-- WNDW    		dimensione iniziale della finestra di ritrasmissione, aumenta con la progressione WNDW*2^NTENTATIVI
+- WNDW    		dimensione iniziale della finestra di ritrasmissione, aumenta con la progressione WNDW*(2^NTENTATIVI)
 
 - TXTIMEOUT 		timeoute di ritrasmissione. Tempo massimo di attesa di un ack, passato il quale, avviene la ritrasmissione
 
