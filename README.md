@@ -56,5 +56,18 @@ Se l'ack di un invio non arriva in tempo, allo scadere di un timeout, la ritrasm
 
 Il tempo casuale serve a minimizzare la probabilità di collisione con le altre stazioni, la finestra variabile a tenere conto delle varie situazioni di traffico.
 
+Tempistiche e impostazioni:
+
+- MAXATTEMPTS  	numero di tentativi di ritrasmissione in mancanza di un ack dal ricevitore
+
+- WNDW    		dimensione iniziale della finestra di ritrasmissione, aumenta con la progressione WNDW*2^NTENTATIVI
+
+- TXTIMEOUT 		timeoute di ritrasmissione. Tempo massimo di attesa di un ack, passato il quale, avviene la ritrasmissione
+
+- Slot time tempo di propagazione tra le stazioni più distanti del sistema
+
+- DEBUG  			1 attiva modo debug
+
+
 
 
