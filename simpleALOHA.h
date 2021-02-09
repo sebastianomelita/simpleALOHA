@@ -31,7 +31,7 @@
 #define DIFS 			5	//DIFS =  SIFS  + (2 * Slot time) 
 #define SIFS 			1
 #define TXTIMEOUT 		2000
-#define DEBUG  			1
+#define DEBUG  			0
 
 #if (DEBUG)
 	#define DEBUG_PRINT(x)   	Serial.print (x)
@@ -79,6 +79,20 @@ typedef struct
 uint8_t getMySA();
 
 uint8_t getMyGroup();
+
+uint16_t getOutCnt();
+
+uint16_t getErrCnt();
+
+uint16_t getInCnt();
+
+uint16_t getAckCnt();
+
+float getErrInRatio();
+
+float getInAckOutMsgRatio();
+
+float getOutAckInMsgRatio();
 
 void init(Stream *, uint8_t , uint8_t , uint8_t , uint32_t);
 

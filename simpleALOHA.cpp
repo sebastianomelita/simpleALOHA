@@ -20,7 +20,7 @@
 #include "simpleALOHA.h"
 uint8_t u8Buffer[MAX_BUFFER]; // buffer unico condiviso per TX e RX (da usare alternativamente)
 uint8_t _txpin;
-uint16_t u16InCnt, u16OutCnt, u16errCnt;
+uint16_t u16InCnt, u16OutCnt, u16errCnt, u16inAckCnt, u16inMsgCnt, u16OutMsgCnt, u16reOutMsgCnt, u16noreOutMsgCnt;
 uint8_t u8lastRec; // per rivelatore di fine trama (stop bit)
 modbus_t ackobj, *appobj;
 uint8_t mysa;
@@ -45,12 +45,46 @@ uint8_t getMyGroup(){
 	return mygroup;
 }
 
+uint16_t getErrCnt(){
+	return u16errCnt;
+}
+
+uint16_t getInCnt(){
+	return u16InCnt;
+}
+
+uint16_t getOutCnt(){
+	return u16OutCnt;
+}
+
+uint16_t getInAckCnt(){
+	return u16inAckCnt;
+}
+
+uint16_t getOutAckCnt(){
+	return u16inAckCnt;
+}
+
+float getErrInRatio(){
+	return  ((float) u16errCnt / u16InCnt)*100;
+}
+
+float getInAckOutMsgRatio(){
+	return ((float) u16inAckCnt / u16OutMsgCnt)*100;
+}
+
+float getReOutMsgOutMsgRatio(){
+	return ((float) u16reOutMsgCnt / u16OutMsgCnt)*100;
+}
+
+
 void init(Stream *port485, uint8_t _txpin485, uint8_t mysa485, uint8_t mygroup485, uint32_t u32speed=9600){
+	randomSeed(analogRead(0));
 	port = port485;
 	_txpin = _txpin485;
 	mysa = mysa485;
 	mygroup = mygroup485;
-	u16InCnt = u16OutCnt = u16errCnt = 0;
+	u16InCnt = u16OutCnt = u16errCnt = u16inAckCnt = u16inMsgCnt = u16OutMsgCnt = u16reOutMsgCnt = u16noreOutMsgCnt = 0;
 	static_cast<HardwareSerial*>(port)->begin(u32speed);
 	ackobj.u8sa = mysa;
 	ackobj.u8group = mygroup;
@@ -98,6 +132,8 @@ boolean sendMsg(modbus_t *tosend){
 		u8state = ACKSTATE;
 		precAck = millis();	
 		DEBUG_PRINTLN("ACKSTATE:");
+		u16OutMsgCnt++;
+		u16noreOutMsgCnt++;
 	}//else messaggio non si invia....
 	
 	return sent;
@@ -116,6 +152,8 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 		if(millis()-precBack > backoffTime){
 			DEBUG_PRINTLN("BACKOFF_SCADUTO: ");
 			resendMsg(appobj); //trasmette sul canale
+			u16OutMsgCnt++;
+			u16reOutMsgCnt++;
 			u8state = ACKSTATE;	
 			precAck = millis();
 		}
@@ -209,7 +247,8 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 		resendMsg(&ackobj);
 		DEBUG_PRINTLN("ACKSENT:");
 		rcvEventCallback(rt);   // l'evento ha il messaggio come parametro di out
-	}else if (u8Buffer[ SI ] == ACK){
+	}else if (u8Buffer[ SI ] == ACK){ //ack ricevuti
+		u16inAckCnt++;
 		DEBUG_PRINTLN("ACK_RECEIVED:");
 		if(u8state == ACKSTATE || u8state == BACKOFF_STARTED){
 			u8state = WAITSTATE;	//next go to WAITSTATE
@@ -305,7 +344,7 @@ void rcvEvent(modbus_t* rcvd, uint8_t msglen){
 	rcvd->u8si = u8Buffer[ SI ];
 	rcvd->msglen = u8Buffer[ BYTE_CNT ];
 	// payload
-	for(int i=0; i < msglen; i++){
+	for(int i=0; i < msglen-PAYLOAD; i++){
 		rcvd->data[i] = u8Buffer[i+PAYLOAD];
 	}
 	// notifica l'evento di ricezione all'applicazione con una callback
