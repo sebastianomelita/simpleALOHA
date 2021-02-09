@@ -1,3 +1,19 @@
+/**
+ * @license
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; version
+ *  2.1 of the License.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ **/
 //#include <SoftwareSerial.h>
 #ifndef __myprotoALOHA__
 #define __myprotoALOHA__
@@ -15,7 +31,7 @@
 #define DIFS 			5	//DIFS =  SIFS  + (2 * Slot time) 
 #define SIFS 			1
 #define TXTIMEOUT 		2000
-#define DEBUG  			1
+#define DEBUG  			0
 
 #if (DEBUG)
 	#define DEBUG_PRINT(x)   	Serial.print (x)
@@ -63,6 +79,20 @@ typedef struct
 uint8_t getMySA();
 
 uint8_t getMyGroup();
+
+uint16_t getOutCnt();
+
+uint16_t getErrCnt();
+
+uint16_t getInCnt();
+
+uint16_t getAckCnt();
+
+float getErrInRatio();
+
+float getInAckOutMsgRatio();
+
+float getOutAckInMsgRatio();
 
 void init(Stream *, uint8_t , uint8_t , uint8_t , uint32_t);
 
