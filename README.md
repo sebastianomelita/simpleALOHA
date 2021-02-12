@@ -50,11 +50,19 @@ La poll(&rxobj,&val) deve essere chiamata ad ogni loop e ha due parametri modifi
 
 Manda un messaggio non più lungo di 250 bit, può essere un numero o una sequenza di caratteri (ad es. un JSON)
 
-All'invio riceve automaticamente la conferma dal destinatario, se non la riceve, ritrasmette fino a 5 volte, poi rinuncia.
+Trama unicast:
 
-Se l'ack di un invio non arriva in tempo, allo scadere di un timeout, la ritrasmissione avviene dopo un tempo casuale (backoff) all'interno di una finestra di trasmissione che si allarga, ad ogni nuovo tentativo, in maniera esponenziale.
+- Manda un messaggio non più lungo di 250 bit, può essere un numero o una sequenza di caratteri (ad es. un JSON)
 
-Il tempo casuale serve a minimizzare la probabilità di collisione con le altre stazioni, la finestra variabile a tenere conto delle varie situazioni di traffico.
+- All'invio riceve automaticamente la conferma dal destinatario, se non la riceve, ritrasmette fino a 5 volte, poi rinuncia.
+
+- Se l'ack di un invio non arriva in tempo, allo scadere di un timeout, la ritrasmissione avviene dopo un tempo casuale (backoff) all'interno di una finestra di trasmissione che si allarga, ad ogni nuovo tentativo, in maniera esponenziale. Il tempo casuale serve a minimizzare la probabilità di collisione con le altre stazioni, la finestra variabile a tenere conto delle varie situazioni di traffico.
+
+Trama multicast:
+
+- Manda un messaggio non più lungo di 250 bit, può essere un numero o una sequenza di caratteri (ad es. un JSON)
+
+- All'invio è cura del destinatario inviare una conferma negativa (NACK) se questo ha ricevuto una trama corrotta, alla ricezione del NACK il mittente reinvia la trama in unicast al membro del gruppo che ha ricevuto la trama corrotta.
 
 Tempistiche e impostazioni:
 
