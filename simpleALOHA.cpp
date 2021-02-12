@@ -118,6 +118,7 @@ boolean sendMsg(modbus_t *tosend){
 	appobj = tosend;
 	tosend->u8sa = mysa;
 	tosend->u8group = mygroup;
+	tosend->multicast = (tosend->u8da == 0xFF);
 	bool sent = false;
 	//DEBUG_PRINTLN(((int)u8state);
 	DEBUG_PRINT("Msg DA: ");
@@ -129,9 +130,13 @@ boolean sendMsg(modbus_t *tosend){
 		sent = true;
 		parallelToSerial(tosend);
 		sendTxBuffer(u8Buffer[ BYTE_CNT ]); //trasmette sul canale
-		u8state = ACKSTATE;
-		precAck = millis();	
-		DEBUG_PRINTLN("ACKSTATE:");
+		if(tosend->multicast){
+				u8state = WAITSTATE;
+			}else{
+				u8state = ACKSTATE;
+				precAck = millis();	
+				DEBUG_PRINTLN("DIFS_ACKSTATE:");
+			}
 		u16OutMsgCnt++;
 		u16noreOutMsgCnt++;
 	}//else messaggio non si invia....
@@ -154,8 +159,12 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 			resendMsg(appobj); //trasmette sul canale
 			u16OutMsgCnt++;
 			u16reOutMsgCnt++;
-			u8state = ACKSTATE;	
-			precAck = millis();
+			if(appobj->multicast){
+					u8state = WAITSTATE;
+			}else{
+				u8state = ACKSTATE;	
+				precAck = millis();
+			}
 		}
 	}
 	
@@ -200,10 +209,32 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 	
 	int8_t i8state = getRxBuffer();  // altrimenti recupera tutto il messaggio e mettilo sul buffer
 	
-    if (i8state < PAYLOAD + 1) // se è incompleto o scorretto scartalo
+	if ((i8state > 0) && (i8state < PAYLOAD + 1)) // se è incompleto scartalo
     {
 		u16errCnt++;
-		if(u8state == ACKSTATE){
+        return i8state;
+    }
+	
+	if ((u8Buffer[ DA ] != mysa) && !((u8Buffer[ GROUP ] == mygroup)) && (u8Buffer[ DA ] == 255)){
+		DEBUG_PRINTLN("msg non destinato a me");
+		DEBUG_PRINT("DA: ");
+		DEBUG_PRINTLN((uint8_t)u8Buffer[ DA ]);
+		DEBUG_PRINT("SA mio: ");
+		DEBUG_PRINTLN((uint8_t)mysa);
+		return 0;  // altrimenti se il messaggio non è indirizzato a me...scarta
+	}else{
+		DEBUG_PRINTLN("msg destinato a me");
+		DEBUG_PRINT("DA: ");
+		DEBUG_PRINTLN((uint8_t)u8Buffer[ DA ]);
+		DEBUG_PRINT("SA mio: ");
+		DEBUG_PRINTLN((uint8_t)mysa);
+		DEBUG_PRINT("SI: ");
+		DEBUG_PRINTLN((uint8_t)u8Buffer[ SI ]);
+	}
+	
+	// se il messaggio è destinato a me ma è corrotto
+	if (i8state < 0){
+		if(u8state == ACKSTATE){ 
 			DEBUG_PRINTLN("ACK_CORROTTO: ");
 			if(retry < MAXATTEMPTS){
 				backoffTime = getBackoff();
@@ -221,14 +252,21 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 				DEBUG_PRINTLN("WAITSTATE:");
 			}
 		}
-        return i8state;
-    }
-	//DEBUG_PRINTLN(("msg completo");
-	//DEBUG_PRINT("DA messaggio: ");
-	//DEBUG_PRINTLN(((uint8_t)u8Buffer[ DA ]);
-	//DEBUG_PRINT("SA mio: ");
-	//DEBUG_PRINTLN(((uint8_t)mysa);
-    if ((u8Buffer[ DA ] != mysa) && !((u8Buffer[ GROUP ] == mygroup)) && (u8Buffer[ DA ] == 255))return 0;  // altrimenti se il messaggio non è indirizzato a me...scarta
+		
+		if (u8Buffer[ SI ] == MSG){
+			if(u8Buffer[ DA ] == 0xFF){
+				ackobj.multicast = true;
+				ackobj.u8da = u8Buffer[ SA ];
+				ackobj.u8si = NACK;
+				sendMsg(&ackobj);
+				DEBUG_PRINT("ERROR: ");
+				DEBUG_PRINTLN((int) i8state);
+				DEBUG_PRINT("SENDING NACK TO: ");
+				DEBUG_PRINTLN((int) ackobj.u8da);
+				return i8state; // altrimenti gli altri di seguito leggono il valore del buffer di trasmissione
+			}
+		}
+	}
 	
 	//DEBUG_PRINTLN(("msg destinato a me");
 	if (u8Buffer[ SI ] == MSG){
@@ -244,9 +282,15 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 		//ackobj.msglen = strlen((char*)ackobj.data )+1;
 		rt->data = buf;
 		rcvEvent(rt, i8state); // il messaggio è valido allora genera un evento di "avvenuta ricezione"
-		resendMsg(&ackobj);
-		DEBUG_PRINTLN("ACKSENT:");
+		DEBUG_PRINTLN("MSG RECEIVED:");
+		if(u8Buffer[ DA ] != 0xFF){
+			ackobj.multicast = false;
+			ackobj.u8si = ACK;
+			resendMsg(&ackobj);
+			DEBUG_PRINTLN(" ACKSENT:");
+		}
 		rcvEventCallback(rt);   // l'evento ha il messaggio come parametro di out
+		return i8state; // altrimenti gli altri di seguito leggono il valore del buffer di trasmissione
 	}else if (u8Buffer[ SI ] == ACK){ //ack ricevuti
 		u16inAckCnt++;
 		DEBUG_PRINTLN("ACK_RECEIVED:");
@@ -255,6 +299,10 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 			DEBUG_PRINTLN("WAITSTATE:");
 			retry = 0;
 		}//else messaggio di ack si perde....
+	}else if(u8Buffer[ SI ] == NACK){
+		DEBUG_PRINTLN("NACK_RECEIVED:");
+		sendMsg(appobj);// il nack eve arrivare velocemente, altrimenti il TX reinvia il successivo!
+		return i8state; // altrimenti gli altri di seguito leggono il valore del buffer di trasmissione
 	}
     return i8state;
 }
@@ -268,6 +316,9 @@ void sendTxBuffer(uint8_t u8BufferSize){
     u8BufferSize++;
     u8Buffer[ u8BufferSize ] = u16crc & 0x00ff; //seleziona il byte meno significativo
     u8BufferSize++;
+	// add end delimiter
+	u8Buffer[ u8BufferSize ] = SOFV;
+    u8BufferSize++;
 
 	if (_txpin > 1)
     {
@@ -277,7 +328,7 @@ void sendTxBuffer(uint8_t u8BufferSize){
 	DEBUG_PRINT("size: ");
 	DEBUG_PRINTLN(u8BufferSize);
 	for(int i=0;i<u8BufferSize;i++){
-		DEBUG_PRINT(u8Buffer[i]);
+		DEBUG_PRINT(u8Buffer[i]);DEBUG_PRINT("-");
 	}
 	DEBUG_PRINTLN();
     // transfer buffer to serial line
@@ -306,18 +357,23 @@ int8_t getRxBuffer()
     uint8_t u8BufferSize = 0;
     while ( port->available() ) // finchè ce ne sono, leggi tutti i caratteri disponibili
     {							// e mettili sul buffer di ricezione
-        u8Buffer[ u8BufferSize ] = port->read();
-		DEBUG_PRINT("(");
-		DEBUG_PRINT((char) u8Buffer[ u8BufferSize ]);
-		DEBUG_PRINT(":");
-		DEBUG_PRINT((uint8_t) u8Buffer[ u8BufferSize ]);
-		DEBUG_PRINT("),");
-        u8BufferSize ++;
-		// segnala evento di buffer overflow (un attacco hacker?)
-        if (u8BufferSize >= MAX_BUFFER){
-			u16InCnt++;
-			u16errCnt++;
-			return ERR_BUFF_OVERFLOW;
+		uint8_t curr = port->read();
+		if(curr != SOFV){
+			u8Buffer[ u8BufferSize ] = curr;
+			DEBUG_PRINT("(");
+			DEBUG_PRINT((char) u8Buffer[ u8BufferSize ]);
+			DEBUG_PRINT(":");
+			DEBUG_PRINT((uint8_t) u8Buffer[ u8BufferSize ]);
+			DEBUG_PRINT("),");
+			u8BufferSize ++;
+			// segnala evento di buffer overflow (un attacco hacker?)
+			if (u8BufferSize >= MAX_BUFFER){
+				u16InCnt++;
+				u16errCnt++;
+				return ERR_BUFF_OVERFLOW;
+			}
+		}else{
+			break;
 		}
     }
 	DEBUG_PRINTLN();
@@ -328,6 +384,7 @@ int8_t getRxBuffer()
     if ( calcCRC( u8BufferSize-2 ) != u16MsgCRC ) //except last two byte
     {
         u16errCnt ++;
+		u16InCnt++;
         return ERR_BAD_CRC;
     }
 
