@@ -135,7 +135,7 @@ boolean sendMsg(modbus_t *tosend){
 			}else{
 				u8state = ACKSTATE;
 				precAck = millis();	
-				DEBUG_PRINTLN("DIFS_ACKSTATE:");
+				DEBUG_PRINTLN("ACKSTATE:");
 			}
 		u16OutMsgCnt++;
 		u16noreOutMsgCnt++;
@@ -215,10 +215,13 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
         return i8state;
     }
 	
+	
 	if ((u8Buffer[ DA ] != mysa) && !((u8Buffer[ GROUP ] == mygroup)) && (u8Buffer[ DA ] == 255)){
 		DEBUG_PRINTLN("msg non destinato a me");
 		DEBUG_PRINT("DA: ");
 		DEBUG_PRINTLN((uint8_t)u8Buffer[ DA ]);
+		DEBUG_PRINT("GROUP: ");
+		DEBUG_PRINTLN((uint8_t)u8Buffer[ GROUP ]);
 		DEBUG_PRINT("SA mio: ");
 		DEBUG_PRINTLN((uint8_t)mysa);
 		return 0;  // altrimenti se il messaggio non è indirizzato a me...scarta
