@@ -22,7 +22,9 @@
 #define MAX_BUFFER 		64
 #define STOP_BIT  		5  
 #define MSG  			1 	
+#define SOFV			126	  
 #define ACK  			129 //(100000001)  il primo (MSB) bit è un ack bit
+#define NACK  			128 //(100000001)  il primo (MSB) bit è un ack bit
 #define TBASE			20
 #define MAXATTEMPTS  	5
 #define WNDW    		20
@@ -68,13 +70,16 @@ enum MESSAGE
 
 typedef struct
 {
-    uint8_t u8da;          /*!< Slave address between 1 and 247. 0 means broadcast */ 
+    uint8_t u8sof;
+	uint8_t u8da;          /*!< Slave address between 1 and 247. 0 means broadcast */ 
 	uint8_t u8sa;          /*!< Slave address between 1 and 247. 0 means broadcast */
     uint8_t u8group;         /*!< Function code: 1, 2, 3, 4, 5, 6, 15 or 16 */
     uint8_t u8si;    /*!< Address of the first register to access at slave/s */
     uint8_t *data;     /*!< Pointer to memory image in master */
 	uint8_t msglen;
+	bool multicast;
 } modbus_t;
+
 
 uint8_t getMySA();
 
@@ -92,7 +97,7 @@ float getErrInRatio();
 
 float getInAckOutMsgRatio();
 
-float getOutAckInMsgRatio();
+float getReOutMsgOutMsgRatio();
 
 void init(Stream *, uint8_t , uint8_t , uint8_t , uint32_t);
 
