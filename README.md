@@ -64,7 +64,7 @@ Trama multicast:
 
 - è caratterizzata dall'indirizzo di destinazione 0xFF che significa broadcast all'interno del proprio gruppo
 
-- All'invio è cura del destinatario inviare una conferma negativa (NACK) se questo ha ricevuto una trama corrotta, alla ricezione del NACK il mittente reinvia la trama in unicast al membro del gruppo che ha ricevuto la trama corrotta.
+- Alla sua ricezione, il destinatario invia automaticamente una conferma negativa (NACK) se questo ha ricevuto una trama corrotta, alla ricezione del NACK il mittente reinvia la trama in unicast al membro del gruppo che ha ricevuto la trama corrotta.
 
 Tempistiche e impostazioni:
 
