@@ -17,7 +17,7 @@
 //#include <SoftwareSerial.h>
 #include <inttypes.h>
 #include "Arduino.h"
-#include "simpleALOHA.h"
+#include "simpleCSMA.h"
 uint8_t u8Buffer[MAX_BUFFER]; // buffer unico condiviso per TX e RX (da usare alternativamente)
 uint8_t _txpin;
 uint16_t u16InCnt, u16OutCnt, u16errCnt, u16inAckCnt, u16inMsgCnt, u16OutMsgCnt, u16reOutMsgCnt, u16noreOutMsgCnt;
@@ -36,6 +36,7 @@ unsigned long timeoutTime=TXTIMEOUT;
 uint8_t retry;
 bool cca = true;
 bool started = false;
+
 
 uint8_t getMySA(){
 	return mysa;
@@ -77,7 +78,6 @@ float getReOutMsgOutMsgRatio(){
 	return ((float) u16reOutMsgCnt / u16OutMsgCnt)*100;
 }
 
-
 void init(Stream *port485, uint8_t _txpin485, uint8_t mysa485, uint8_t mygroup485, uint32_t u32speed=9600){
 	randomSeed(analogRead(0));
 	port = port485;
@@ -86,11 +86,12 @@ void init(Stream *port485, uint8_t _txpin485, uint8_t mysa485, uint8_t mygroup48
 	mygroup = mygroup485;
 	u16InCnt = u16OutCnt = u16errCnt = u16inAckCnt = u16inMsgCnt = u16OutMsgCnt = u16reOutMsgCnt = u16noreOutMsgCnt = 0;
 	static_cast<HardwareSerial*>(port)->begin(u32speed);
+	ackobj.u8sof = SOFV;
 	ackobj.u8sa = mysa;
 	ackobj.u8group = mygroup;
 	ackobj.u8si = ACK;
-	ackobj.data = "";
-	ackobj.msglen = strlen((char*)ackobj.data )+1;
+	ackobj.data = 0;
+	ackobj.msglen = 0;
 }
 
 extern void rcvEventCallback(modbus_t* rcvd);
@@ -113,7 +114,7 @@ inline void parallelToSerial(const modbus_t *tosend){
 }
 //--------------------------------------------------------------------------------------------------------------
 // Converte il messaggio dal formato parallelo (struct) a quello seriale (array di char)
-boolean sendMsg(modbus_t *tosend){
+bool sendMsg(modbus_t *tosend){
 	tosend->u8si = (uint8_t) MSG;
 	appobj = tosend;
 	tosend->u8sa = mysa;
@@ -121,26 +122,36 @@ boolean sendMsg(modbus_t *tosend){
 	tosend->multicast = (tosend->u8da == 0xFF);
 	bool sent = false;
 	//DEBUG_PRINTLN(((int)u8state);
-	DEBUG_PRINT("Msg DA: ");
+	DEBUG_PRINT("Sent Msg DA: ");
 	DEBUG_PRINTLN((uint8_t)tosend->u8da);
-	DEBUG_PRINT("Msg SA: ");
+	DEBUG_PRINT("Sent Msg SA: ");
 	DEBUG_PRINTLN((uint8_t)tosend->u8sa);
 	if(u8state == WAITSTATE){
 		DEBUG_PRINTLN("copiato:");
-		sent = true;
-		parallelToSerial(tosend);
-		sendTxBuffer(u8Buffer[ BYTE_CNT ]); //trasmette sul canale
-		if(tosend->multicast){
+		if(cca){//accesso immediato
+			sent = true;
+			parallelToSerial(tosend);
+			sendTxBuffer(u8Buffer[ BYTE_CNT ]); //trasmette sul canale
+			if(tosend->multicast){
 				u8state = WAITSTATE;
 			}else{
 				u8state = ACKSTATE;
 				precAck = millis();	
-				DEBUG_PRINTLN("ACKSTATE:");
+				DEBUG_PRINTLN("DIFS_ACKSTATE:");
 			}
-		u16OutMsgCnt++;
-		u16noreOutMsgCnt++;
+			u16noreOutMsgCnt++;
+			u16OutMsgCnt++;
+		}else{//accesso differito
+			u8state = TX_DEFERRED;
+			//backoffTime = getBackoff();
+			//precBack = millis();
+			retry = 0;
+			DEBUG_PRINT("TX_DEFERRED: ");
+			//DEBUG_PRINT(backoffTime);
+			//DEBUG_PRINT(", retry: ");
+			//DEBUG_PRINTLN(retry);
+		}
 	}//else messaggio non si invia....
-	
 	return sent;
 }
 
@@ -151,48 +162,102 @@ void resendMsg(const modbus_t *tosend){
 }
 
 int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
-{
-    if(u8state == BACKOFF_STARTED){
-		// controlla se è scaduto il backoff
-		if(millis()-precBack > backoffTime){
-			DEBUG_PRINTLN("BACKOFF_SCADUTO: ");
-			resendMsg(appobj); //trasmette sul canale
-			u16OutMsgCnt++;
-			u16reOutMsgCnt++;
-			if(appobj->multicast){
-					u8state = WAITSTATE;
-			}else{
-				u8state = ACKSTATE;	
-				precAck = millis();
-			}
-		}
-	}
-	
+{	
 	// controlla se è in arrivo un messaggio
 	uint8_t u8current;
+	
     u8current = port->available(); // vede se è arrivato un "pezzo" iniziale del messaggio (frame chunk)
 
-     if (u8current == 0){
-		if(u8state == ACKSTATE){
-			if(millis()-precAck > timeoutTime){
-				if(retry < MAXATTEMPTS){
+    if (u8current == 0){ //canale libero
+		//se il canale è libero controlla la scadenza di un eventuale backoff di prima trasmissione
+		if(u8state == DIFS_BACKOFF_STARTED){ 
+			// controlla se è scaduto il backoff
+			if(millis()-precBack > backoffTime){
+				DEBUG_PRINTLN("DIFS_BACKOFF_scaduto: ");
+				resendMsg(appobj); //trasmette sul canale
+				u16OutMsgCnt++;
+				u16noreOutMsgCnt++;
+				if(appobj->multicast){
+					u8state = WAITSTATE;
+				}else{
+					u8state = ACKSTATE;	
+					precAck = millis();
+				}
+			}
+		}
+        //se il canale è libero controlla la scadenza di un eventuale backoff di ritrasmissione
+		if(u8state == BACKOFF_STARTED){ 
+			// controlla se è scaduto il backoff
+			if(millis()-precBack > backoffTime){
+				DEBUG_PRINTLN("BACKOFF_SCADUTO: ");
+				resendMsg(appobj); //trasmette sul canale
+				u16reOutMsgCnt++;
+				u16OutMsgCnt++;
+				if(appobj->multicast){
+					u8state = WAITSTATE;
+				}else{
+					u8state = ACKSTATE;	
+					precAck = millis();
+				}
+			}
+		}
+		//controlla se c'è una transizione da occupato a libero
+		if(cca == false && !started){ //transizione da occupato a libero
+			u32difsTime = millis(); // da adesso aspetta un DIFS
+			started = true;
+			if((u8state == BACKOFF_STARTED) || (u8state == DIFS_BACKOFF_STARTED)){
+				precBack = millis(); 
+			}
+			DEBUG_PRINTLN("cca changed to true 1: ");
+		}
+		//controlla se è passato un DIFS
+		if((unsigned long)(millis() -u32difsTime) > (unsigned long)DIFS){
+			cca = true; // IDLE ed è passato un DIFS
+			started = false;	
+			// elenco operazioni da fare allo scadere del DIFS
+			//1) fare partire il backoff di prima trasmissione
+			if(u8state == TX_DEFERRED){//la catena di backoff INIZIA a cca asserito (DIFS scaduto)
+					u8state = DIFS_BACKOFF_STARTED;
 					backoffTime = getBackoff();
 					precBack = millis();
-					retry++;
-					DEBUG_PRINT("BACKOFF_STARTED: ");
+					retry = 0;
+					DEBUG_PRINT("DIFS_BACKOFF_STARTED: ");
 					DEBUG_PRINT(backoffTime);
 					DEBUG_PRINT(", retry: ");
 					DEBUG_PRINTLN(retry);
-					u8state = BACKOFF_STARTED;
-				}else{
-					DEBUG_PRINTLN("MAX_ATTEMPT");
-					retry = 0;
-					u8state = WAITSTATE;
-					DEBUG_PRINTLN("WAITSTATE:");
+			}
+			//2) fare partire il backoff di ritrasmissione
+			else if(u8state == ACKSTATE){ //canale libero dopo un DIFS
+				if(millis()-precAck > timeoutTime){
+					if(retry < MAXATTEMPTS){
+						backoffTime = getBackoff();
+						precBack = millis();
+						retry++;
+						DEBUG_PRINT("BACKOFF_STARTED: ");
+						DEBUG_PRINT(backoffTime);
+						DEBUG_PRINT(", retry: ");
+						DEBUG_PRINTLN(retry);
+						u8state = BACKOFF_STARTED;
+					}else{
+						DEBUG_PRINTLN("MAX_ATTEMPT");
+						retry = 0;
+						u8state = WAITSTATE;
+						DEBUG_PRINTLN("WAITSTATE:");
+					}
 				}
 			}
 		}
 		return 0;  // se non è arrivato nulla per ora basta, ricontrolla al prossimo giro
+	}else{ // canale occupato
+		//controlla transizione da libero a occupato
+		if(cca){
+			cca = false;
+			if((u8state == BACKOFF_STARTED) || (u8state == DIFS_BACKOFF_STARTED)){
+				backoffTime = backoffTime - millis();
+			}	
+			DEBUG_PRINTLN("cca changed to false: ");
+		}
+		//u8complete = port2->find(SOFV);
 	}
 	
     // controlla se c'è uno STOP_BIT dopo la fine, se non c'è allora la trama non è ancora completamente arrivata
@@ -204,24 +269,26 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 		//DEBUG_PRINTLN(("STOP_BIT:");
         return 0;
     }
+	
 	// Se la distanza tra nuovo e vecchio carattere è minore di uno stop bit ancora la trama non è completa
     if ((unsigned long)(millis() -u32time) < (unsigned long)STOP_BIT) return 0;
 	
 	int8_t i8state = getRxBuffer();  // altrimenti recupera tutto il messaggio e mettilo sul buffer
 	
-	if ((i8state > 0) && (i8state < PAYLOAD + 1)) // se è incompleto scartalo
+    if ((i8state > 0) && (i8state < PAYLOAD + 1)) // se è incompleto scartalo
     {
 		u16errCnt++;
         return i8state;
     }
-	
-	
-	if ((u8Buffer[ DA ] != mysa) && !((u8Buffer[ GROUP ] == mygroup)) && (u8Buffer[ DA ] == 255)){
+	//DEBUG_PRINTLN(("msg completo");
+	//DEBUG_PRINT("DA messaggio: ");
+	//DEBUG_PRINTLN(((uint8_t)u8Buffer[ DA ]);
+	//DEBUG_PRINT("SA mio: ");
+	//DEBUG_PRINTLN(((uint8_t)mysa);
+    if ((u8Buffer[ DA ] != mysa) && !((u8Buffer[ GROUP ] == mygroup)) && (u8Buffer[ DA ] == 255)){
 		DEBUG_PRINTLN("msg non destinato a me");
 		DEBUG_PRINT("DA: ");
 		DEBUG_PRINTLN((uint8_t)u8Buffer[ DA ]);
-		DEBUG_PRINT("GROUP: ");
-		DEBUG_PRINTLN((uint8_t)u8Buffer[ GROUP ]);
 		DEBUG_PRINT("SA mio: ");
 		DEBUG_PRINTLN((uint8_t)mysa);
 		return 0;  // altrimenti se il messaggio non è indirizzato a me...scarta
@@ -270,21 +337,16 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 			}
 		}
 	}
-	
 	//DEBUG_PRINTLN(("msg destinato a me");
 	if (u8Buffer[ SI ] == MSG){
 		//ackobj.u8sa = mysa;
 		ackobj.u8da = u8Buffer[ SA ]; //problema!
-		DEBUG_PRINT("Ack DA: ");
-		DEBUG_PRINTLN((uint8_t)u8Buffer[ SA ]);
-		DEBUG_PRINT("Ack SA: ");
-		DEBUG_PRINTLN((uint8_t)ackobj.u8sa);
 		//ackobj.u8group = u8Buffer[ GROUP ];
 		//ackobj.u8si = u8Buffer[ SI ];
 		//ackobj.data = "";
 		//ackobj.msglen = strlen((char*)ackobj.data )+1;
 		rt->data = buf;
-		rcvEvent(rt, i8state); // il messaggio è valido allora genera un evento di "avvenuta ricezione"
+		rcvEvent(rt, i8state); // il messaggio è valido allora genera un evento di "avvenuta ricezione"	
 		DEBUG_PRINTLN("MSG RECEIVED:");
 		if(u8Buffer[ DA ] != 0xFF){
 			ackobj.multicast = false;
@@ -292,20 +354,24 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 			resendMsg(&ackobj);
 			DEBUG_PRINTLN(" ACKSENT:");
 		}
+		u16inMsgCnt++;
 		rcvEventCallback(rt);   // l'evento ha il messaggio come parametro di out
 		return i8state; // altrimenti gli altri di seguito leggono il valore del buffer di trasmissione
-	}else if (u8Buffer[ SI ] == ACK){ //ack ricevuti
-		u16inAckCnt++;
+	}else if (u8Buffer[ SI ] == ACK){
 		DEBUG_PRINTLN("ACK_RECEIVED:");
 		if(u8state == ACKSTATE || u8state == BACKOFF_STARTED){
 			u8state = WAITSTATE;	//next go to WAITSTATE
 			DEBUG_PRINTLN("WAITSTATE:");
 			retry = 0;
+			u16inAckCnt++;
 		}//else messaggio di ack si perde....
 	}else if(u8Buffer[ SI ] == NACK){
 		DEBUG_PRINTLN("NACK_RECEIVED:");
 		sendMsg(appobj);// il nack eve arrivare velocemente, altrimenti il TX reinvia il successivo!
 		return i8state; // altrimenti gli altri di seguito leggono il valore del buffer di trasmissione
+	}else{
+		DEBUG_PRINT("MESSAGGIO SCONOSCIUTO, SI:");
+		DEBUG_PRINTLN((int) u8Buffer[ SI ]);
 	}
     return i8state;
 }
@@ -320,8 +386,8 @@ void sendTxBuffer(uint8_t u8BufferSize){
     u8Buffer[ u8BufferSize ] = u16crc & 0x00ff; //seleziona il byte meno significativo
     u8BufferSize++;
 	// add end delimiter
-	u8Buffer[ u8BufferSize ] = SOFV;
-    u8BufferSize++;
+	// // u8Buffer[ u8BufferSize ] = SOFV;
+    // // u8BufferSize++;
 
 	if (_txpin > 1)
     {
@@ -358,10 +424,11 @@ int8_t getRxBuffer()
     if (_txpin > 1) digitalWrite( _txpin, LOW );
 	//DEBUG_PRINT("received: ");
     uint8_t u8BufferSize = 0;
+	DEBUG_PRINT("RCV_BUFFER: ");
     while ( port->available() ) // finchè ce ne sono, leggi tutti i caratteri disponibili
     {							// e mettili sul buffer di ricezione
 		uint8_t curr = port->read();
-		if(curr != SOFV){
+		//if(curr != SOFV){
 			u8Buffer[ u8BufferSize ] = curr;
 			DEBUG_PRINT("(");
 			DEBUG_PRINT((char) u8Buffer[ u8BufferSize ]);
@@ -375,9 +442,9 @@ int8_t getRxBuffer()
 				u16errCnt++;
 				return ERR_BUFF_OVERFLOW;
 			}
-		}else{
-			break;
-		}
+		//}else{
+		//	break;
+		//}
     }
 	DEBUG_PRINTLN();
 	// confonta il CRC ricevuto con quello calcolato in locale
@@ -399,6 +466,7 @@ int8_t getRxBuffer()
 void rcvEvent(modbus_t* rcvd, uint8_t msglen){
 	// converti da formato seriale (array di char) in formato parallelo (struct)
 	// header
+
 	rcvd->u8da = u8Buffer[ SA ];
 	rcvd->u8group = u8Buffer[ GROUP ];
 	rcvd->u8si = u8Buffer[ SI ];
