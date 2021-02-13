@@ -15,25 +15,24 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  **/
 //#include <SoftwareSerial.h>
-#ifndef __myprotoALOHA__
-#define __myprotoALOHA__
+#ifndef __myprotoCSMA__
+#define __myprotoCSMA__
 #include <inttypes.h>
 #include "Arduino.h"
 #define MAX_BUFFER 		64
 #define STOP_BIT  		5  
+#define SOFV			254 
 #define MSG  			1 	
-#define SOFV			254	  
 #define ACK  			129 //(100000001)  il primo (MSB) bit è un ack bit
 #define NACK  			128 //(100000001)  il primo (MSB) bit è un ack bit
-#define TBASE			20
 #define MAXATTEMPTS  	5
 #define WNDW    		20
 // SlotTime = CCATime + RxTxTurnaroundTime + AirPropagationTime+ MACProcessingDelay 
 // SIFS < DIFS < EIFS
-#define DIFS 			5	//DIFS =  SIFS  + (2 * Slot time) 
+#define DIFS 			6	//DIFS =  SIFS  + (2 * Slot time) 
 #define SIFS 			1
 #define TXTIMEOUT 		2000
-#define DEBUG  			0
+#define DEBUG  			1
 
 #if (DEBUG)
 	#define DEBUG_PRINT(x)   	Serial.print (x)
@@ -48,7 +47,8 @@ enum PROTO_STATE
     WAITSTATE             	  	= 1,
     ACKSTATE                  	= 2,
 	BACKOFF_STARTED				= 3,
-	TRANSMIT_INTERRUPTED		= 4
+	DIFS_BACKOFF_STARTED		= 4,
+	TX_DEFERRED					= 5
 };
 
 enum ERR_LIST
@@ -60,7 +60,8 @@ enum ERR_LIST
 
 enum MESSAGE
 {
-    DA                           = 0, //!< ID field
+					 		
+	DA  						  = 0, //!< ID field	                       
 	SA,
     GROUP, 		//!< Function code position
     SI, 		//!< Service identifier
@@ -79,7 +80,6 @@ typedef struct
 	uint8_t msglen;
 	bool multicast;
 } modbus_t;
-
 
 uint8_t getMySA();
 
