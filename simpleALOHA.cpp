@@ -386,8 +386,8 @@ void sendTxBuffer(uint8_t u8BufferSize){
     u8Buffer[ u8BufferSize ] = u16crc & 0x00ff; //seleziona il byte meno significativo
     u8BufferSize++;
 	// add end delimiter
-	// // u8Buffer[ u8BufferSize ] = SOFV;
-    // // u8BufferSize++;
+	u8Buffer[ u8BufferSize ] = SOFV;
+    u8BufferSize++;
 
 	if (_txpin > 1)
     {
@@ -428,7 +428,7 @@ int8_t getRxBuffer()
     while ( port->available() ) // finchè ce ne sono, leggi tutti i caratteri disponibili
     {							// e mettili sul buffer di ricezione
 		uint8_t curr = port->read();
-		//if(curr != SOFV){
+		if(curr != SOFV){
 			u8Buffer[ u8BufferSize ] = curr;
 			DEBUG_PRINT("(");
 			DEBUG_PRINT((char) u8Buffer[ u8BufferSize ]);
@@ -442,9 +442,9 @@ int8_t getRxBuffer()
 				u16errCnt++;
 				return ERR_BUFF_OVERFLOW;
 			}
-		//}else{
-		//	break;
-		//}
+		}else{
+			break;
+		}
     }
 	DEBUG_PRINTLN();
 	// confonta il CRC ricevuto con quello calcolato in locale
