@@ -5,7 +5,7 @@ Si può usare per realizzare un sistema multimaster con stazioni che trasmettono
 
 Il transceiver provato è un MAX485 con piedino di controllo della direzione. Dovrebbe funzionare anche con un transceiver col controllo automatico della direzione (piedino con una impostazione qualsiasi).
 
-Sono possibili sia trasmissioni unicast che multicast trattate indipendentemente l'una dall'altra a livello di datagramma semplicemente impostando l'indirizzo di broadcast sul gruppo (255)
+Sono possibili sia trasmissioni unicast che multicast trattate indipendentemente l'una dall'altra a livello di datagramma semplicemente impostando l'indirizzo individuale al valore di broadcast (255)
 
 Supporta la libreria SoftwareSerial ma, in questo caso, bisogna impostare la velocità a 0 mella funzione init() e impostare la effettiva velocità della seriale emulata con il comando begin() dell'oggetto SoftwareSerial (nel setup() dello sketch).
  
