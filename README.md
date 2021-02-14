@@ -4,14 +4,9 @@ Implementazione del protocollo ALOHA con rilevazione delle collisioni basata sul
 Si può usare per realizzare un sistema multimaster con stazioni che trasmettono indipendentemente l'una dall'altra senza la supervisione di un dispositivo centrale (master).
 
 Il transceiver provato è un MAX485 con piedino di controllo della direzione. Dovrebbe funzionare anche con un transceiver col controllo automatico della direzione (piedino con una impostazione qualsiasi).
-Sostanzialmente è un rimaneggiamento del codice citato di seguito:
- * @file 	ModbusRtu.h
- * @version     1.21
- * @date        2016.02.21
- * @author 	Samuel Marco i Armengol
- * @contact     sammarcoarmengol@gmail.com
- * @contribution Helium6072
- 
+
+Sono possibili sia trasmissioni unicast che multicast trattate indipendentemente l'una dall'altra a livello di datagramma semplicemente impostando l'indirizzo di broadcast sul gruppo (255)
+
 Supporta la libreria SoftwareSerial ma, in questo caso, bisogna impostare la velocità a 0 mella funzione init() e impostare la effettiva velocità della seriale emulata con il comando begin() dell'oggetto SoftwareSerial (nel setup() dello sketch).
  
  Trama: 
@@ -86,6 +81,14 @@ Tempistiche e impostazioni:
 - Slot time tempo di propagazione tra le stazioni più distanti del sistema
 
 - DEBUG  			1 attiva modo debug
+
+Sostanzialmente il presente software è un rimaneggiamento del codice citato di seguito:
+ * @file 	ModbusRtu.h
+ * @version     1.21
+ * @date        2016.02.21
+ * @author 	Samuel Marco i Armengol
+ * @contact     sammarcoarmengol@gmail.com
+ * @contribution Helium6072
 
 
 
