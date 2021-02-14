@@ -16,9 +16,10 @@ Supporta la libreria SoftwareSerial ma, in questo caso, bisogna impostare la vel
  
  Trama: 
  
-        |---DA---|---SA---|---GROUP---|---SI---|---BYTE_CNT---|---PAYLOAD---|---CRC---|
+        |---DA---|---SA---|---GROUP---|---SI---|---BYTE_CNT---|---PAYLOAD---|---CRC---|---EOF---|
  
-        |---1B---|---1B---|----1B-----|---1B---|------1B------|---VARIABLE--|---2B----|
+        |---1B---|---1B---|----1B-----|---1B---|------1B------|---VARIABLE--|---2B----|---1B----|
+ 
  
  - DA: destination address - 1byte (1-254, 255 indirizzo di broadcast)
  
