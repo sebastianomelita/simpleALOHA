@@ -53,8 +53,8 @@ void loop() // run over and over
 }
 
 void rcvEventCallback(modbus_t* rcvd){
-	Serial.println((int) rcvd->data);
-	digitalWrite(led, rcvd->data);
+	Serial.println((int)rcvd->data[0]);
+	digitalWrite(led, rcvd->data[0]);
 	Serial.print("RCV_LED-N:");
 	Serial.print(getInCnt());
 	Serial.print("- BER:");

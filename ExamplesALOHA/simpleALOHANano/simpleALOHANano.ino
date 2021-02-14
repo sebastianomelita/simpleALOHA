@@ -78,30 +78,3 @@ void rcvEventCallback(modbus_t* rcvd){
 	Serial.println((unsigned) getReOutMsgOutMsgRatio());
 }
 
-/*
-void loop() // run over and over
-{
-	poll(&rxobj,&val);
-	
-	if(millis()-prec > TBASE){
-		prec = millis();
-		step = (step + 1) % nstep;    // conteggio circolare arriva al massimo a nstep-1
-		//if(togglen(digitalRead(btn), HIGH, 0)){
-			txobj.data = &statet[0];
-			txobj.msglen = 1;
-		if(!(step%random(0, 10))){	
-			sendMsg(&txobj);
-		}	
-	}
-}
-
-void rcvEventCallback(modbus_t* rcvd){
-	//////Serial.println((const char*) rcvd->data);
-	////Serial.println(val);
-	digitalWrite(led, val);
-	////Serial.print("RCV_LED: ");
-}
-*/
-
-
-

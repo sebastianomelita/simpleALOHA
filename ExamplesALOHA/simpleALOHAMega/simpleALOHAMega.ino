@@ -56,38 +56,18 @@ void loop() // run over and over
 }
 
 void rcvEventCallback(modbus_t* rcvd){
-	Serial.println((int)rcvd->data);
 	digitalWrite(led, val);
-	Serial.print("RCV_LED: ");
+	Serial.print("VAL-N:");
+	Serial.println((unsigned)val);
+	Serial.print("RCV_LED-N:");
+	Serial.print((unsigned) getInCnt());
+	Serial.print("- RCV_ERR-N:");
+	Serial.print((unsigned) getErrCnt());
+	Serial.print("- BER:");
+	Serial.print((unsigned) getErrInRatio());
+	Serial.print(" - OUT_ACKED:");
+	Serial.print((unsigned) getInAckOutMsgRatio());
+	Serial.print(" - REOUTED:");
+	Serial.println((unsigned) getReOutMsgOutMsgRatio());
 }
-
-/*
-void loop() // run over and over
-{
-	poll(&rxobj,&val);
-	
-	if(millis()-prec > TBASE){
-		prec = millis();
-		step = (step + 1) % nstep;    // conteggio circolare arriva al massimo a nstep-1
-		//if(togglen(digitalRead(btn), HIGH, 0)){
-			//txobj.data = &statet[0];
-			txobj.msglen = 1;
-			//sendMsg(&txobj);
-			if(!(step%random(0, 10))){	
-				statet[0] = !statet[0];
-				txobj.data = &statet[0];
-				sendMsg(&txobj);
-			}	
-		//}	
-	}
-}
-
-void rcvEventCallback(modbus_t* rcvd){
-	Serial.println((int)val);
-	digitalWrite(led, val);
-	Serial.print("RCV_LED: ");
-}
-*/
-
-
 
