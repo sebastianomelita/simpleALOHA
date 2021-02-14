@@ -12,6 +12,8 @@ Sostanzialmente è un rimaneggiamento del codice citato di seguito:
  * @contact     sammarcoarmengol@gmail.com
  * @contribution Helium6072
  
+Supporta la libreria SoftwareSerial ma, in questo caso, bisogna impostare la velocità a 0 mella funzione init() e impostare la effettiva velocità della seriale emulata con il comando begin() dell'oggetto SoftwareSerial (nel setup() dello sketch).
+ 
  Trama: 
  
         |---DA---|---SA---|---GROUP---|---SI---|---BYTE_CNT---|---PAYLOAD---|---CRC---|
