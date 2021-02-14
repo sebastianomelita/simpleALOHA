@@ -32,6 +32,8 @@ Supporta la libreria SoftwareSerial ma, in questo caso, bisogna impostare la vel
  
  - CRC: Cyclic Redundancy Check - 2byte (calcolati su tutto il messaggio)
  
+  - EOF. End Of Frame delimitatore di fine trama che dovrebbe limitare gli errori su trame molto vicine. Il valore NON DEVE essere presente nel campo dati (funzione di bit stuffing non implementata!)
+ 
  Il buffer di trasmissione memorizza un solo messaggio ed è a comune tra trasmissione e ricezione. 
  
  E' possibile rispondere ad un messaggio con un ack mentre si attende, a propria volta, un ACK.
