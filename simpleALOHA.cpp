@@ -162,8 +162,8 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 				u8state = ACKSTATE;	
 				precAck = millis();
 			}
+			return 0;  // ho trasmesso! Ricontrolla al prossimo giro
 		}
-		return 0;  // ho trasmesso! Ricontrolla al prossimo giro
 	}
 	
 	// controlla se è in arrivo un messaggio
@@ -218,7 +218,6 @@ int8_t poll(modbus_t *rt, uint8_t *buf) // valuta risposte pendenti
 	
 	// controllo se è destinato a me
     if (((u8Buffer[ DA ] == mysa) || ((u8Buffer[ GROUP ] == mygroup)) && (u8Buffer[ DA ] == 255))){	
-		DEBUG_PRINTLN("");
 		DEBUG_PRINTLN("msg destinato a me");
 		DEBUG_PRINT("DA preso: ");
 		DEBUG_PRINTLN((uint8_t)u8Buffer[ DA ]);
@@ -407,7 +406,6 @@ int8_t getRxBuffer()
         return ERR_BAD_CRC;
     }
 
-	DEBUG_PRINTLN("");
     u16InCnt++;
     return u8BufferSize;
 }
