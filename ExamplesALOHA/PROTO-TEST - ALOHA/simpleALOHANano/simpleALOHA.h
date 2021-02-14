@@ -25,7 +25,6 @@
 #define SOFV			254  
 #define ACK  			129 //(100000001)  il primo (MSB) bit è un ack bit
 #define NACK  			128 //(100000001)  il primo (MSB) bit è un ack bit
-#define TBASE			20
 #define MAXATTEMPTS  	5
 #define WNDW    		20
 #define TXTIMEOUT 		2000

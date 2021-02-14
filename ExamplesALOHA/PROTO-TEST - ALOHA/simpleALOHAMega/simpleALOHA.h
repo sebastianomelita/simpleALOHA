@@ -31,7 +31,7 @@
 // SlotTime = CCATime + RxTxTurnaroundTime + AirPropagationTime+ MACProcessingDelay 
 // SIFS < DIFS < EIFS
 #define TXTIMEOUT 		2000
-#define DEBUG  			1
+#define DEBUG  			0
 
 #if (DEBUG)
 	#define DEBUG_PRINT(x)   	Serial.print (x)

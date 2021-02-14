@@ -37,17 +37,19 @@ void loop() // run over and over
 	if(millis()-prec > TBASE){
 		prec = millis();
 		step = (step + 1) % nstep;    // conteggio circolare arriva al massimo a nstep-1	
+		//if(!(step%50)){
 		if(!(step%random(0, 10))){	
 			statet[0] = !statet[0];
 			txobj.data = &statet[0];
 			sendMsg(&txobj);
+			//digitalWrite(led, !digitalRead(led));
 		}	
 	}
 }
 
 void rcvEventCallback(modbus_t* rcvd){
 	Serial.println((int)val);
-	digitalWrite(led, val);
+	digitalWrite(led, rcvd->data);
 	Serial.print("RCV_LED-N:");
 	Serial.print(getInCnt());
 	Serial.print("- BER:");
