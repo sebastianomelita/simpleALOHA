@@ -22,7 +22,7 @@
 #define MAX_BUFFER 		64
 #define STOP_BIT  		5  
 #define MSG  			1 	
-#define SOFV			255	  
+#define SOFV			254	  
 #define ACK  			129 //(100000001)  il primo (MSB) bit è un ack bit
 #define NACK  			128 //(100000001)  il primo (MSB) bit è un ack bit
 #define TBASE			20
@@ -33,7 +33,7 @@
 #define DIFS 			5	//DIFS =  SIFS  + (2 * Slot time) 
 #define SIFS 			1
 #define TXTIMEOUT 		2000
-#define DEBUG  			0
+#define DEBUG  			1
 
 #if (DEBUG)
 	#define DEBUG_PRINT(x)   	Serial.print (x)

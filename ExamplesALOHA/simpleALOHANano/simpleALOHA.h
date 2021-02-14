@@ -33,7 +33,7 @@
 #define DIFS 			5	//DIFS =  SIFS  + (2 * Slot time) 
 #define SIFS 			1
 #define TXTIMEOUT 		2000
-#define DEBUG  			0
+#define DEBUG  			1
 
 #if (DEBUG)
 	#define DEBUG_PRINT(x)   	Serial.print (x)
