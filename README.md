@@ -65,6 +65,8 @@ Trama unicast:
 
 Trama multicast:
 
+- ha un indirizzo di gruppo (ad es. txobj.u8group = 2;) e un indirizzo individuale broadcast (ad es. txobj.u8da = 255);
+
 - Manda un messaggio non più lungo di 250 bit, può essere un numero o una sequenza di caratteri (ad es. un JSON)
 
 - è caratterizzata dall'indirizzo di destinazione 0xFF che significa broadcast all'interno del proprio gruppo
