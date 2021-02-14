@@ -57,6 +57,8 @@ Manda un messaggio non più lungo di 250 bit, può essere un numero o una sequen
 
 Trama unicast:
 
+- ha un indirizzo di gruppo (ad es. txobj.u8group = 2) e un indirizzo individuale unicast (ad es. txobj.u8da = 3)
+
 - Manda un messaggio non più lungo di 250 bit, può essere un numero o una sequenza di caratteri (ad es. un JSON)
 
 - All'invio riceve automaticamente la conferma dal destinatario, se non la riceve, ritrasmette fino a 5 volte, poi rinuncia.
