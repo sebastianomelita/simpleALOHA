@@ -82,7 +82,7 @@ Tempistiche e impostazioni:
 
 - DEBUG  			1 attiva modo debug
 
-Sostanzialmente il presente software è un rimaneggiamento del codice citato di seguito:
+Sostanzialmente il presente software è un rimaneggiamento del codice citato di seguito di cui si ringrazia l'autore:
  * @file 	ModbusRtu.h
  * @version     1.21
  * @date        2016.02.21
