@@ -5,8 +5,7 @@
 
 modbus_t txobj, rxobj;
 //toggle per più pulsanti
-uint8_t statet[1]={0}; 
-uint8_t precval[1]={0}; 
+uint8_t statet=0; 
 unsigned long prec=0;
 byte led=9; 
 byte btn=2;
@@ -36,11 +35,12 @@ void loop() // run over and over
 	
 	if(millis()-prec > TBASE){
 		prec = millis();
-		step = (step + 1) % nstep;    // conteggio circolare arriva al massimo a nstep-1	
-		//if(!(step%50)){
+		step = (step + 1) % nstep;    // conteggio circolare arriva al massimo a nstep-1
+		
 		if(!(step%random(0, 10))){	
-			statet[0] = !statet[0];
-			txobj.data = &statet[0];
+		//if(!(step%50)){
+			statet = !statet;
+			txobj.data = &statet;
 			sendMsg(&txobj);
 			//digitalWrite(led, !digitalRead(led));
 		}	
