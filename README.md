@@ -7,7 +7,7 @@ Il transceiver provato è un MAX485 con piedino di controllo della direzione. Do
 
 Sono possibili sia trasmissioni unicast che multicast trattate indipendentemente l'una dall'altra a livello di datagramma semplicemente impostando l'indirizzo individuale al valore di broadcast (255)
 
-Supporta la libreria SoftwareSerial ma, in questo caso, bisogna impostare la velocità a 0 mella funzione init() e impostare la effettiva velocità della seriale emulata con il comando begin() dell'oggetto SoftwareSerial (nel setup() dello sketch).
+Supporta la libreria SoftwareSerial ma, in questo caso, bisogna impostare la velocità a 0 nella funzione init() e impostare la effettiva velocità della seriale emulata con il comando begin() dell'oggetto SoftwareSerial (nel setup() dello sketch).
  
  Trama: 
  
